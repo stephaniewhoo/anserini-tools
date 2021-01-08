@@ -63,23 +63,32 @@ if __name__ == '__main__':
                     docno = hits[rank].docid
                     fout.write('{}\t{}\t{}\n'.format(qid, docno, rank + 1))
     else:
-        qids = []
-        queries = []
-        result_dict = {}
-
-        for line_number, line in enumerate(open(args.queries, 'r', encoding='utf8')):
-            qid, query = line.strip().split('\t')
-            qids.append(qid)
-            queries.append(query)
-
-        results = searcher.batch_search(queries, qids, args.hits, args.threads)
-
         with open(args.output, 'w') as fout:
-            for qid in qids:
-                hits = results.get(qid)
-                for rank in range(len(hits)):
-                    docno = hits[rank].docid
-                    fout.write(f'{qid}\t{docno}\t{rank+1}\n')
+            qids = []
+            queries = []
+
+            for line_number, line in enumerate(open(args.queries, 'r', encoding='utf8')):
+                qid, query = line.strip().split('\t')
+                qid_num += 1
+                qids.append(qid)
+                queries.append(query)
+                if(line_number % 1000 == 0 and line_number != 0):
+                    results = searcher.batch_search(queries, qids, args.hits, args.threads)
+                    for qid in qids:
+                        hits = results.get(qid)
+                        for rank in range(len(hits)):
+                            docno = hits[rank].docid
+                            fout.write(f'{qid}\t{docno}\t{rank+1}\n')
+                    qids = []
+                    queries = []
+
+            if len(qids) != 0:
+                results = searcher.batch_search(queries, qids, args.hits, args.threads)
+                for qid in qids:
+                    hits = results.get(qid)
+                    for rank in range(len(hits)):
+                        docno = hits[rank].docid
+                        fout.write(f'{qid}\t{docno}\t{rank + 1}\n')
 
     total_time = (time.time() - total_start_time)
     print(f'Total retrieval time: {total_time:0.3f} s')

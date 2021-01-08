@@ -18,13 +18,18 @@ import json
 import os
 import argparse
 
-
 def convert_collection(args):
     print('Converting collection...')
     file_index = 0
     with open(args.collection_path, encoding='utf-8') as f:
         for i, line in enumerate(f):
-            doc_id, doc_text = line.rstrip().split('\t')
+            line = json.loads(line)
+            doc_id = line['id']
+            doc_text_unlemm = line['text_unlemm']
+            doc_text = line['text']
+            doc_contents = line['contents']
+            doc_text_bert_tok = line['text_bert_tok']
+            doc_entity = line['entity']
 
             if i % args.max_docs_per_file == 0:
                 if i > 0:
@@ -32,14 +37,13 @@ def convert_collection(args):
                 output_path = os.path.join(args.output_folder, 'docs{:02d}.json'.format(file_index))
                 output_jsonl_file = open(output_path, 'w', encoding='utf-8', newline='\n')
                 file_index += 1
-            output_dict = {'id': doc_id, 'contents': doc_text}
+            output_dict = {'id': doc_id, 'text':doc_text, 'contents': doc_contents,'text_unlemm': doc_text_unlemm, 'text_bert_tok':doc_text_bert_tok, 'entity':doc_entity}
             output_jsonl_file.write(json.dumps(output_dict) + '\n')
 
             if i % 100000 == 0:
                 print(f'Converted {i:,} docs, writing into file {file_index}')
 
     output_jsonl_file.close()
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Convert MSMARCO tsv collection into jsonl files for Anserini.')
